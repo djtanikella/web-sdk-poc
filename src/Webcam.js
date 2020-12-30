@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from "react";
 import * as faceLandmarksDetection from "@tensorflow-models/face-landmarks-detection";
 import "@tensorflow/tfjs-backend-webgl";
 import "@tensorflow/tfjs-backend-cpu";
+
+import ErrorMessage from "./ErrorMessage";
 import "./App.css";
 
 function Webcam() {
@@ -14,9 +16,6 @@ function Webcam() {
 
   useEffect(() => {
     requestAccessAndStartVideo(webcamRef.current);
-  }, []);
-
-  useEffect(() => {
     setInterval(() => {
       setupMesh();
     }, 350);
@@ -86,15 +85,6 @@ function requestAccessAndStartVideo(videoElement) {
   const rejection = (err) => console.error(err);
 
   navigator.getUserMedia({ video: {} }, success, rejection);
-}
-
-function ErrorMessage({ state, message }) {
-  const opacity = state ? 1 : 0;
-  return (
-    <div style={{ opacity }} className="errorBox">
-      {message}
-    </div>
-  );
 }
 
 export default Webcam;
