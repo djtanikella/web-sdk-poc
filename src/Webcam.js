@@ -1,24 +1,29 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import * as faceLandmarksDetection from "@tensorflow-models/face-landmarks-detection";
 import "@tensorflow/tfjs-backend-webgl";
 import "@tensorflow/tfjs-backend-cpu";
-
-const styles = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  height: "100vh",
-};
+import "./App.css";
 
 function Webcam() {
   const webcamRef = useRef(null);
+  const webcamReady = useRef(false);
+  const [error, setError] = useState({
+    state: true,
+    message: "Looking for a face...",
+  });
 
   useEffect(() => {
     requestAccessAndStartVideo(webcamRef.current);
   }, []);
 
+  useEffect(() => {
+    setInterval(() => {
+      setupMesh();
+    }, 350);
+  }, []);
+
   async function setupMesh() {
-    if (!webcamRef.current) return;
+    if (!webcamRef.current || !webcamReady.current) return;
 
     const model = await faceLandmarksDetection.load(
       faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
@@ -28,19 +33,17 @@ function Webcam() {
       input: webcamRef.current,
     });
 
-    console.log("🌷", predictions);
+    checkForOnlyOneFace(predictions.length);
+  }
 
-    if (predictions.length > 0) {
-      for (let i = 0; i < predictions.length; i++) {
-        const keypoints = predictions[i].scaledMesh;
-
-        // Log facial keypoints.
-        for (let i = 0; i < keypoints.length; i++) {
-          const [x, y, z] = keypoints[i];
-
-          console.log(`Keypoint ${i}: [${x}, ${y}, ${z}]`);
-        }
-      }
+  function checkForOnlyOneFace(faces) {
+    if (faces === 1) {
+      setError({ state: false, message: "" });
+    } else {
+      setError({
+        state: true,
+        message: `It seems like there are ${faces} faces`,
+      });
     }
   }
 
@@ -48,24 +51,32 @@ function Webcam() {
     if (webcamRef.current) {
       webcamRef.current.onloadeddata = (e) => {
         console.log("onloadedata fired ", e);
+        webcamReady.current = true;
         setupMesh();
       };
     }
   }, [webcamRef.current]);
 
-  const mirror = { transform: "scaleX(-1)" };
+  const borderColor = error.state ? "#ff1744" : "#283593 ";
+
+  const videoStyles = {
+    transform: "scaleX(-1)",
+    border: `10px solid ${borderColor}`,
+    borderRadius: 50,
+  };
 
   return (
-    <div style={styles}>
+    <div className="container">
       <video
         id="webcam"
         width="720"
-        height="560"
+        height="540"
         autoPlay
-        style={mirror}
+        style={videoStyles}
         muted
         ref={webcamRef}
       />
+      <ErrorMessage {...error} />
     </div>
   );
 }
@@ -75,6 +86,15 @@ function requestAccessAndStartVideo(videoElement) {
   const rejection = (err) => console.error(err);
 
   navigator.getUserMedia({ video: {} }, success, rejection);
+}
+
+function ErrorMessage({ state, message }) {
+  const opacity = state ? 1 : 0;
+  return (
+    <div style={{ opacity }} className="errorBox">
+      {message}
+    </div>
+  );
 }
 
 export default Webcam;
