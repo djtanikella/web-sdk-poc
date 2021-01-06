@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Webcam from "react-webcam";
-import "./App.css";
+import "./App.scss";
 
 const images = [];
 

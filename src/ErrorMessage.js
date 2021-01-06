@@ -1,5 +1,5 @@
 import React from "react";
-import "./App.css";
+import "./App.scss";
 
 function ErrorMessage({ state, message }) {
   const opacity = state ? 1 : 0;

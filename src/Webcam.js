@@ -4,7 +4,10 @@ import "@tensorflow/tfjs-backend-webgl";
 import "@tensorflow/tfjs-backend-cpu";
 
 import ErrorMessage from "./ErrorMessage";
-import "./App.css";
+import Position from "./Position";
+import "./App.scss";
+
+let scan;
 
 function Webcam() {
   const webcamRef = useRef(null);
@@ -14,25 +17,75 @@ function Webcam() {
     message: "Looking for a face...",
   });
 
+  const [roll, setRoll] = useState(0);
+
+  const [leftEye, setLeftEye] = useState([]);
+  const [rightEye, setRightEye] = useState([]);
+
   useEffect(() => {
     requestAccessAndStartVideo(webcamRef.current);
-    setInterval(() => {
+    scan = setInterval(() => {
       setupMesh();
-    }, 350);
+    }, 1000);
+
+    return () => stopWebcam();
   }, []);
+
+  function stopWebcam() {
+    console.log("stopwebcam called");
+    clearInterval(scan);
+    webcamRef.current = null;
+  }
 
   async function setupMesh() {
     if (!webcamRef.current || !webcamReady.current) return;
 
-    const model = await faceLandmarksDetection.load(
-      faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
-    );
+    try {
+      const model = await faceLandmarksDetection.load(
+        faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
+      );
 
-    const predictions = await model.estimateFaces({
-      input: webcamRef.current,
-    });
+      const predictions = await model.estimateFaces({
+        input: webcamRef.current,
+        predictIrisies: false,
+      });
 
-    checkForOnlyOneFace(predictions.length);
+      const scaledMesh = predictions[0] && predictions[0].scaledMesh;
+      if (scaledMesh) {
+        const leftEyePoint = scaledMesh[133];
+        const rightEyePoint = scaledMesh[362];
+        setLeftEye(leftEyePoint);
+        setRightEye(rightEyePoint);
+        setRoll(calculateRoll(leftEyePoint, rightEyePoint));
+      }
+
+      checkForOnlyOneFace(predictions.length);
+    } catch (err) {
+      console.error("error in the setup mesh fn", err);
+    }
+  }
+
+  function calculateRoll(pt1, pt2) {
+    // debugger;
+    const deltaX = pt2[0] - pt1[0];
+    const deltaY = pt2[1] - pt1[1];
+    const deltaZ = pt2[2] - pt2[2];
+
+    // calc roll
+    const radians = Math.atan2(deltaX, deltaY);
+    const degrees = radians * (180 / Math.PI);
+
+    return degrees - 90;
+  }
+
+  function calculateYaw(pt1, pt2) {
+    const deltaY = pt2[1] - pt1[1];
+    const deltaZ = pt2[2] - pt2[2];
+
+    const radians = Math.atan2(deltaY, deltaZ);
+    const degrees = radians * (180 / Math.PI);
+
+    return degrees;
   }
 
   function checkForOnlyOneFace(faces) {
@@ -64,6 +117,21 @@ function Webcam() {
     borderRadius: 50,
   };
 
+  const rollProps = {
+    metric: {
+      name: "Roll",
+      value: roll.toFixed(0),
+    },
+    pointOne: {
+      name: "Left Eye",
+      value: leftEye,
+    },
+    pointTwo: {
+      name: "Right Eye",
+      value: rightEye,
+    },
+  };
+
   return (
     <div className="container">
       <video
@@ -75,16 +143,24 @@ function Webcam() {
         muted
         ref={webcamRef}
       />
+      <button onClick={() => stopWebcam()}>stop</button>
       <ErrorMessage {...error} />
+      <div className="positioningBoxes">
+        <Position {...rollProps} />
+      </div>
     </div>
   );
 }
 
-function requestAccessAndStartVideo(videoElement) {
-  const success = (stream) => (videoElement.srcObject = stream);
-  const rejection = (err) => console.error(err);
+async function requestAccessAndStartVideo(videoElement) {
+  const mediaConstraints = { video: true, audio: false };
 
-  navigator.getUserMedia({ video: {} }, success, rejection);
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+    videoElement.srcObject = stream;
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 export default Webcam;
