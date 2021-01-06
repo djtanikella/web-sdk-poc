@@ -1,0 +1,56 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #e8eaf6;
+}
+
+.errorBox {
+  border: "5px solid #ff1744";
+  padding: 35px;
+  width: 700px;
+  height: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #ffcdd2;
+  margin-top: 15px;
+  font-size: 18px;
+  font-family: sans-serif;
+}
+
+.positioningBoxes {
+  display: flex;
+  width: auto + 10px;
+
+  .positionCard {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    background: #fff;
+    border-radius: 3px;
+    min-width: 300px;
+    height: 200px;
+    padding: 15px;
+    margin: 10px;
+    text-align: center;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+
+    .primaryValue {
+      text-transform: capitalize;
+      font-size: 32px;
+      font-weight: 800;
+    }
+
+    .coordinates {
+      display: flex;
+      padding: 0;
+      justify-content: space-between;
+      font-size: 16px;
+      text-transform: none;
+    }
+  }
+}
