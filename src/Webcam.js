@@ -18,9 +18,14 @@ function Webcam() {
   });
 
   const [roll, setRoll] = useState(0);
+  const [yaw, setYaw] = useState(0);
+  const [pitch, setPitch] = useState(0);
 
   const [leftEye, setLeftEye] = useState([]);
   const [rightEye, setRightEye] = useState([]);
+  const [forehead, setForehead] = useState([]);
+  const [chin, setChin] = useState([]);
+  const [lastUpdated, setLastUpdated] = useState(Date.now());
 
   useEffect(() => {
     requestAccessAndStartVideo(webcamRef.current);
@@ -54,9 +59,21 @@ function Webcam() {
       if (scaledMesh) {
         const leftEyePoint = scaledMesh[133];
         const rightEyePoint = scaledMesh[362];
-        setLeftEye(leftEyePoint);
-        setRightEye(rightEyePoint);
-        setRoll(calculateRoll(leftEyePoint, rightEyePoint));
+        const chinPoint = scaledMesh[199];
+        const foreheadPoint = scaledMesh[151];
+
+        const now = Date.now();
+
+        if (now > lastUpdated) {
+          setLeftEye(leftEyePoint);
+          setRightEye(rightEyePoint);
+          setForehead(foreheadPoint);
+          setChin(chinPoint);
+          setRoll(calculateRoll(leftEyePoint, rightEyePoint));
+          setYaw(calculateYaw(leftEyePoint, rightEyePoint));
+          setPitch(calculatePitch(chinPoint, foreheadPoint));
+          setLastUpdated(now);
+        }
       }
 
       checkForOnlyOneFace(predictions.length);
@@ -66,12 +83,9 @@ function Webcam() {
   }
 
   function calculateRoll(pt1, pt2) {
-    // debugger;
     const deltaX = pt2[0] - pt1[0];
     const deltaY = pt2[1] - pt1[1];
-    const deltaZ = pt2[2] - pt2[2];
 
-    // calc roll
     const radians = Math.atan2(deltaX, deltaY);
     const degrees = radians * (180 / Math.PI);
 
@@ -79,13 +93,21 @@ function Webcam() {
   }
 
   function calculateYaw(pt1, pt2) {
+    const deltaX = pt2[0] - pt1[0];
+    const deltaZ = pt2[2] - pt1[2];
+
+    const radians = Math.atan2(deltaX, deltaZ);
+    const degrees = radians * (180 / Math.PI);
+    return degrees - 90;
+  }
+
+  function calculatePitch(pt1, pt2) {
     const deltaY = pt2[1] - pt1[1];
-    const deltaZ = pt2[2] - pt2[2];
+    const deltaZ = pt2[2] - pt1[2];
 
     const radians = Math.atan2(deltaY, deltaZ);
     const degrees = radians * (180 / Math.PI);
-
-    return degrees;
+    return degrees + 90;
   }
 
   function checkForOnlyOneFace(faces) {
@@ -132,6 +154,36 @@ function Webcam() {
     },
   };
 
+  const yawProps = {
+    metric: {
+      name: "Yaw",
+      value: yaw.toFixed(0),
+    },
+    pointOne: {
+      name: "Left Eye",
+      value: leftEye,
+    },
+    pointTwo: {
+      name: "Right Eye",
+      value: rightEye,
+    },
+  };
+
+  const pitchProps = {
+    metric: {
+      name: "Pitch",
+      value: pitch.toFixed(0),
+    },
+    pointOne: {
+      name: "Forehead",
+      value: forehead,
+    },
+    pointTwo: {
+      name: "Chin",
+      value: chin,
+    },
+  };
+
   return (
     <div className="container">
       <video
@@ -144,9 +196,12 @@ function Webcam() {
         ref={webcamRef}
       />
       <button onClick={() => stopWebcam()}>stop</button>
+      <button onClick={() => setupMesh()}>capture</button>
       <ErrorMessage {...error} />
       <div className="positioningBoxes">
         <Position {...rollProps} />
+        <Position {...yawProps} />
+        <Position {...pitchProps} />
       </div>
     </div>
   );
