@@ -60,16 +60,18 @@ function Webcam() {
   }
 
   async function setupMesh() {
+    const start = Date.now();
     if (!webcamRef.current || !webcamReady.current) return;
 
     try {
       const model = await faceLandmarksDetection.load(
-        faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
+        faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
+        { shouldLoadIrisModel: false }
       );
 
       const predictions = await model.estimateFaces({
         input: webcamRef.current,
-        predictIrisies: false,
+        predictIrises: false,
       });
 
       const scaledMesh = predictions[0] && predictions[0].scaledMesh;
@@ -100,6 +102,8 @@ function Webcam() {
           errorHandling({ roll, yaw, pitch, faces });
         }
       }
+      const end = Date.now();
+      console.log("ms: ", end - start);
     } catch (err) {
       console.error("error in the setup mesh fn", err);
     }
