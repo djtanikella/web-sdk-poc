@@ -3,6 +3,13 @@ import * as faceLandmarksDetection from "@tensorflow-models/face-landmarks-detec
 import "@tensorflow/tfjs-backend-webgl";
 import "@tensorflow/tfjs-backend-cpu";
 
+import {
+  calculateRoll,
+  calculateYaw,
+  calculatePitch,
+  THRESHOLDS,
+  requestAccessAndStartVideo,
+} from "./utils";
 import ErrorMessage from "./ErrorMessage";
 import Position from "./Position";
 import "./App.scss";
@@ -31,10 +38,20 @@ function Webcam() {
     requestAccessAndStartVideo(webcamRef.current);
     scan = setInterval(() => {
       setupMesh();
-    }, 1000);
+    }, 300);
 
     return () => stopWebcam();
   }, []);
+
+  useEffect(() => {
+    if (webcamRef.current) {
+      webcamRef.current.onloadeddata = (e) => {
+        console.log("onloadedata fired ", e);
+        webcamReady.current = true;
+        setupMesh();
+      };
+    }
+  }, [webcamRef.current]);
 
   function stopWebcam() {
     console.log("stopwebcam called");
@@ -69,74 +86,62 @@ function Webcam() {
           setRightEye(rightEyePoint);
           setForehead(foreheadPoint);
           setChin(chinPoint);
-          setRoll(calculateRoll(leftEyePoint, rightEyePoint));
-          setYaw(calculateYaw(leftEyePoint, rightEyePoint));
-          setPitch(calculatePitch(chinPoint, foreheadPoint));
+
+          const roll = calculateRoll(leftEyePoint, rightEyePoint);
+          const yaw = calculateYaw(leftEyePoint, rightEyePoint);
+          const pitch = calculatePitch(chinPoint, foreheadPoint);
+          const faces = predictions.length;
+
+          setRoll(roll);
+          setYaw(yaw);
+          setPitch(pitch);
           setLastUpdated(now);
+
+          errorHandling({ roll, yaw, pitch, faces });
         }
       }
-
-      checkForOnlyOneFace(predictions.length);
     } catch (err) {
       console.error("error in the setup mesh fn", err);
     }
   }
 
-  function calculateRoll(pt1, pt2) {
-    const deltaX = pt2[0] - pt1[0];
-    const deltaY = pt2[1] - pt1[1];
-
-    const radians = Math.atan2(deltaX, deltaY);
-    const degrees = radians * (180 / Math.PI);
-
-    return degrees - 90;
-  }
-
-  function calculateYaw(pt1, pt2) {
-    const deltaX = pt2[0] - pt1[0];
-    const deltaZ = pt2[2] - pt1[2];
-
-    const radians = Math.atan2(deltaX, deltaZ);
-    const degrees = radians * (180 / Math.PI);
-    return degrees - 90;
-  }
-
-  function calculatePitch(pt1, pt2) {
-    const deltaY = pt2[1] - pt1[1];
-    const deltaZ = pt2[2] - pt1[2];
-
-    const radians = Math.atan2(deltaY, deltaZ);
-    const degrees = radians * (180 / Math.PI);
-    return degrees + 90;
-  }
-
-  function checkForOnlyOneFace(faces) {
-    if (faces === 1) {
-      setError({ state: false, message: "" });
-    } else {
+  function errorHandling({ roll, yaw, pitch, faces }) {
+    if (faces !== 1) {
       setError({
         state: true,
         message: `It seems like there are ${faces} faces`,
       });
+    } else if (Math.abs(roll) > THRESHOLDS.ROLL) {
+      const correction = roll > 0 ? "counter clockwise ↪️" : "clockwise ↩️";
+      setError({
+        state: true,
+        message: `Turn your head ${correction}`,
+      });
+    } else if (Math.abs(yaw) > THRESHOLDS.YAW) {
+      const correction = yaw > 0 ? "left ⬅️" : "right ➡️";
+      setError({
+        state: true,
+        message: `Turn your head to the ${correction}`,
+      });
+    } else if (Math.abs(pitch) > THRESHOLDS.PITCH) {
+      const correction = pitch > 0 ? "down ⬇️" : "up ⬆️";
+      setError({
+        state: true,
+        message: `Turn your head ${correction}`,
+      });
+    } else {
+      setError({
+        state: false,
+        message: "",
+      });
     }
   }
 
-  useEffect(() => {
-    if (webcamRef.current) {
-      webcamRef.current.onloadeddata = (e) => {
-        console.log("onloadedata fired ", e);
-        webcamReady.current = true;
-        setupMesh();
-      };
-    }
-  }, [webcamRef.current]);
-
-  const borderColor = error.state ? "#ff1744" : "#283593 ";
-
   const videoStyles = {
+    border: error.state ? "10px solid #ff1744" : "15px solid teal",
     transform: "scaleX(-1)",
-    border: `10px solid ${borderColor}`,
-    borderRadius: 50,
+    borderRadius: "40%",
+    objectFit: "cover",
   };
 
   const rollProps = {
@@ -188,8 +193,8 @@ function Webcam() {
     <div className="container">
       <video
         id="webcam"
-        width="720"
-        height="540"
+        width="550"
+        height="500"
         autoPlay
         style={videoStyles}
         muted
@@ -205,17 +210,6 @@ function Webcam() {
       </div>
     </div>
   );
-}
-
-async function requestAccessAndStartVideo(videoElement) {
-  const mediaConstraints = { video: true, audio: false };
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-    videoElement.srcObject = stream;
-  } catch (e) {
-    console.error(e);
-  }
 }
 
 export default Webcam;
