@@ -1,0 +1,22 @@
+{
+  "files": {
+    "main.css": "/web-sdk-poc/static/css/main.6d9c78b6.chunk.css",
+    "main.js": "/web-sdk-poc/static/js/main.78eeed0e.chunk.js",
+    "main.js.map": "/web-sdk-poc/static/js/main.78eeed0e.chunk.js.map",
+    "runtime-main.js": "/web-sdk-poc/static/js/runtime-main.86c5d06e.js",
+    "runtime-main.js.map": "/web-sdk-poc/static/js/runtime-main.86c5d06e.js.map",
+    "static/js/2.ca5d5d68.chunk.js": "/web-sdk-poc/static/js/2.ca5d5d68.chunk.js",
+    "static/js/2.ca5d5d68.chunk.js.map": "/web-sdk-poc/static/js/2.ca5d5d68.chunk.js.map",
+    "static/js/3.67df419a.chunk.js": "/web-sdk-poc/static/js/3.67df419a.chunk.js",
+    "static/js/3.67df419a.chunk.js.map": "/web-sdk-poc/static/js/3.67df419a.chunk.js.map",
+    "index.html": "/web-sdk-poc/index.html",
+    "static/css/main.6d9c78b6.chunk.css.map": "/web-sdk-poc/static/css/main.6d9c78b6.chunk.css.map",
+    "static/js/2.ca5d5d68.chunk.js.LICENSE.txt": "/web-sdk-poc/static/js/2.ca5d5d68.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.86c5d06e.js",
+    "static/js/2.ca5d5d68.chunk.js",
+    "static/css/main.6d9c78b6.chunk.css",
+    "static/js/main.78eeed0e.chunk.js"
+  ]
+}
